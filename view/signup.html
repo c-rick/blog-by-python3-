@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>python3 blog</title>
+</head>
+<link rel="stylesheet" href="static/ele.css">
+<body >
+  <div id="app">
+    <div style="margin: 100px auto;width:400px; text-align:center">
+      <el-form :model="signup" :rules="rules" ref="signup" label-width="18%" class="demo-ruleForm">
+        <el-form-item label="名字" prop="name">
+          <el-input v-model="signup.name"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+            <el-input v-model="signup.email"></el-input>
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+            <el-input type="password" v-model="signup.password"></el-input>
+        </el-form-item>
+        <el-button type="primary" @click="submitForm">注册</el-button>
+        <el-button @click="resetForm">重置</el-button>
+        <a style="width:80%;line-height:30px;border:1px solid #459FF3;color:#459FF3;border-radius:5px;display:inline-block;margin-top:20px;text-decoration:none;" href='/signin'>登录</a>
+      </el-form>
+   </div>
+   <div style="position:fixed;width:100%;background:#333435;bottom:0;height:10%;left:0;text-align: center;color:#fff;">
+     <p style="height:100%">blog@ power by python3 and vue element</p>   
+   </div>
+  </div>
+  <script src="static/vue.js"></script>
+  <script src="static/tools.js"></script>
+  <script src="https://cdn.bootcss.com/element-ui/1.4.3/index.js"></script>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data () {
+        return {
+          signup: {
+            name: '',
+            email: '',
+            password: '',
+          },
+          rules: {
+            name: [{
+              required: true, message: '请输入用户名', trigger: 'blur'
+            }],
+            email: [{
+              required: true, message: '请输入邮箱', trigger: 'blur'
+            }],
+            password: [{
+              required: true, message: '请输入密码', trigger: 'blur'
+            }]
+          }
+        }
+      },
+      methods:{
+        submitForm() {
+          this.$refs['signup'].validate((valid) => {
+            if (valid) {
+              fetch('/api/signup', {
+                method: 'POST',
+                headers: {
+                  "Content-Type": "application/json",
+                  "Accept": "application/json"
+                },
+                body: bodyPrase(this.signup)
+              }).then(response => response.json()).then(res => {
+                if ( res.code === 200 ) {
+                  this.$message.info(res.msg)
+                  setTimeout(()=> {
+                    window.location = '/signin'
+                  },1000)
+                } else {
+                  this.$message.error(res.msg)
+                }
+              }).catch(err => this.$message.error(err))
+            } else {
+              this.$message.error('请填入完整信息！');
+              return false;
+            }
+          });
+        },
+        resetForm(){
+          this.$refs['signup'].resetFields();
+        }
+      }
+    })
+
+  </script>
+</body>
+</html>

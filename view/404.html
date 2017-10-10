@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body style="text-align:center">
+  <B>你可能迷路了</B>
+  </br>
+  <small><span></span> 秒后自动为你导航</small>
+  <script>
+  window.onload = function () {
+    var s = document.querySelector('span'),
+      t = 5;
+    var time = setInterval(function () {
+      if (t > 0) {
+        s.innerHTML = t
+        t--
+      } else {
+        clearInterval(time)
+        window.location = '/blogs'
+      }
+    },1000)
+    
+  }
+  </script>
+</body>
+</html>

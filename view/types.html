@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>blog</title>
+</head>
+<style>
+  *{
+    margin: 0;padding: 0;
+  }
+  body{
+    position: relative;
+    min-height: 100vh;
+  }
+  header{
+    text-align: left;
+    padding: 20px;
+  }
+  header a,header img,header .name{
+    height: 50px;
+    width: 50px;
+    vertical-align: middle;
+  }
+  header a{
+    color:#999;
+    text-decoration: none;
+  }
+  .time{float: right;line-height: 50px;}
+  .content{
+    padding: 0 20px;
+    padding-bottom: 90px;
+    text-align: center;
+  }
+  .content h2{
+    padding: 10px;
+    border-bottom: 2px solid #999;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .content .radar{
+    vertical-align: middle;
+    display: inline-block;
+    width:468px;
+    position: relative;
+  }
+  .content .radar button{
+    position:absolute;
+  }
+</style>
+<link rel="stylesheet" href="static/ele.css">
+<script src="static/vue.js"></script>
+<script src="static/tools.js"></script>
+<script src="https://cdn.bootcss.com/element-ui/1.4.3/index.js"></script>
+<body>
+  <div>
+    <header>
+      <a href="javascript:history.go(-1)">《《 返回</a>
+      <img src={{userImage}} alt="">
+      <span class="name">{{userName}}</span>
+    </header>
+    <div id="app" class="content">
+      <h2>我的博客分类</h2>
+      <div class="radar">
+        <el-popover
+          v-for="(item, index) in textArea"
+          placement="right"
+          width="40"
+          trigger="hover">
+          <el-button slot="reference"  :style="{top:item.y-10 + 'px', left:item.x-40+'px', opacity:0}"  v-text="item.text"></el-button>
+          <el-button type="danger" @click="deleteType(item.text)" >删除此博客类型</el-button>
+        </el-popover>
+        <canvas  id="radar" width="468" height="370"></canvas>
+      </div>
+      <span>
+        <el-button type="primary" @click="dialogAddVisible = true" icon="plus">添加博客类型</el-button>
+      </span>
+      <el-dialog title="添加博客类型" :visible.sync="dialogAddVisible">
+        <el-form :rules="addRules" :model="addForm" ref="addForm">
+          <el-form-item label="类型名称" prop="name">
+            <el-input v-model="addForm.name" auto-complete="off"></el-input>
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="dialogAddVisible = false">取 消</el-button>
+          <el-button type="primary" @click="addType">确 定</el-button>
+        </div>
+      </el-dialog>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:0;left:0;width:100%;background:#333435;height:80px;line-height:80px;text-align: center;color:#fff;">
+    <p style="height:100%">blog@ power by python3 and vue element</p>   
+  </div>
+  <script>  
+    var app = new Vue({
+      el: '#app',
+      data () {
+        return {
+          types: [],
+          data: [],
+          textArea: [],
+          max: 0,
+          dialogAddVisible:false,
+          addForm: {
+            name:''
+          },
+          addRules: {
+            name: [{
+              required: true, message: '类型名称', trigger: 'blur'
+            }]
+          }
+        }
+      },
+      mounted () {
+        fetch('/api/getType', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            "Accept": "application/json"
+          }
+        }).then(response => response.json()).then(res => {
+          if(res.code === 200) {
+            this.types = res.data.types
+            this.data = res.data.data
+            this.max = res.data.max
+            this.setRadar(this.types,this.data)
+          } else {
+            this.$message.error(res.msg)
+          }
+          this.dialogUserVisible = false;
+        }).catch(err => this.$message.error(err))
+        
+      },
+      methods:{
+        setRadar (options,data) {
+          var polar = []
+          for (var i in options) {
+            polar.push({text: options[i],max:this.max})
+          }
+          Radar.setOptions({
+            element: 'radar',
+            radius: 140,
+            polar: polar,
+            title: '{v}',
+            data: data
+          }).init()
+          Radar.textArea(res => {
+            this.textArea = res
+          })
+          
+        },
+        addType(){
+          this.$refs['addForm'].validate((valid) => {
+            if (valid) {
+              if(this.types.indexOf(this.addForm.name) != -1) {
+                this.$message.error("已有此分类")
+                return false
+              }
+              this.types.push(this.addForm.name)
+              this.data.push(0)
+              fetch('/api/addType', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  "Accept": "application/json"
+                },
+                body: bodyPrase({types: this.types})
+              }).then(response => response.json()).then(res => {
+                if(res.code === 200) {
+                  this.$message.info(res.msg)
+                  this.setRadar(this.types,this.data)
+                } else {
+                  this.$message.error(res.msg)
+                }
+                this.dialogAddVisible = false;
+              }).catch(err => this.$message.error(err))
+            } else {
+              this.$message.error('必须填入类型名称！');
+              return false;
+            }
+          })
+        },
+        deleteType (text) {
+          fetch('/api/deleteType', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  "Accept": "application/json"
+                },
+                body: bodyPrase({text})
+              }).then(response => response.json()).then(res => {
+                if(res.code === 200) {
+                  this.$message.info(res.msg)
+                  const pop = this.types.indexOf(text)
+                  if (pop !== -1) {
+                    this.types.splice(pop,1)
+                    this.data.splice(pop,1)
+                    this.setRadar(this.types,this.data)
+                  }
+                } else {
+                  this.$message.error(res.msg)
+                }
+              }).catch(err => this.$message.error(err))
+        }
+      }})
+  </script>
+</body>
+</html>

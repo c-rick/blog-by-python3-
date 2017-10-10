@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>blog</title>
+</head>
+<style>
+  *{
+    margin: 0;padding: 0;
+  }
+  body{
+    position: relative;
+    min-height: 100vh;
+  }
+  header{
+    text-align: left;
+    padding: 20px;
+  }
+  header a,header img,header .name{
+    height: 50px;
+    width: 50px;
+    vertical-align: middle;
+  }
+  header a{
+    color:#999;
+    text-decoration: none;
+  }
+  .time{float: right;line-height: 50px;}
+  .content{
+    padding: 0 20px;
+    padding-bottom: 90px;
+  }
+  .content h2{
+    padding: 10px;
+    border-bottom: 2px solid #999;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .content div{
+    font-size: 15px;
+  }
+</style>
+<body>
+  <div>
+    <header>
+      <a href="javascript:history.go(-1)">《《 返回</a>
+      <img src={{userImage}} alt="">
+      <span class="name">{{blog['name']}}</span>
+      <span class="time">{{createTime}}</span>
+    </header>
+    <div class="content">
+      <h2>{{blog['title']}}</h2>
+      <div style="text-indent:30px">{{blog['content']}}</div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:0;left:0;width:100%;background:#333435;height:80px;line-height:80px;text-align: center;color:#fff;">
+    <p style="height:100%">blog@ power by python3 and vue element</p>   
+  </div>
+</body>
+</html>

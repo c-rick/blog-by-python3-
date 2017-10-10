@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>python3 blog</title>
+</head>
+<link rel="stylesheet" href="static/ele.css">
+<script src="static/vue.js"></script>
+<script src="static/tools.js"></script>
+<script src="https://cdn.bootcss.com/element-ui/1.4.3/index.js"></script>
+<style>
+  *{
+    margin: 0;padding: 0;
+  }
+  .right-component,.left-component{
+    display: inline-block;
+    vertical-align: top;
+    height:100vh;
+  }
+  .left-component{
+    background: #324157;
+    width: 180px;
+  }
+  .right-component{
+    box-sizing: border-box;
+    padding: 20px;
+    width: calc(100% - 180px);
+    overflow: scroll;
+  }
+  .left-component>.user-img{
+    margin: 30px auto;
+    border-radius: 50%;
+    box-shadow: 0 0 2px 2px #eee, 0 0 5px 5px #eee;
+    width: 100px;
+    height: 100px;
+    cursor:pointer;
+    position: relative;
+    text-align: center;
+    overflow: hidden;
+  }
+  .user-img img{
+    width: 100%;height: 100%;
+  }
+  .left-component>.user-img:after{
+    display: none;
+  }
+  .left-component>.user-img:hover::after{
+    display: block;
+    content: '点击修改头像';
+    line-height: 100px;
+    color:#fff;
+    font-size: 12px;
+    background: rgba(12,12,12,.5);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;left: 0;
+  }
+  .left-name{
+    color: #eee;
+    text-align: center;
+  }
+  .right-blog{
+    margin-bottom: 10px;
+  }
+  .right-blog .blog-content {
+    padding: 5px 10px 0 10px;
+  }
+  .blog-user img{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border:1px solid #999;
+    vertical-align: middle;
+  }
+  .blog-user > span {
+    vertical-align: middle;
+    margin-left: 5px;
+  }
+  .blog-content>small {
+    overflow : hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .right-blog .bottom{
+    text-align: right;
+  }
+  .right-blog .bottom a{
+    text-decoration: none;
+  }
+  .update-img{
+    z-index: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+</style>
+<body >
+  <div id="app">
+    <section class='left-component'>
+      <div class="user-img" @click="updateImg">
+        <img src={{userimage}} alt="" />
+        <img class="update-img" :src="userimage" alt="">
+        <form name="hiddenForm" enctype="multipart/form-data" style="z-index:-99;opacity:0;">
+          <input type="file" name="userImg" @change="uploadImg($event.target.files)" ref="files"  />
+        </form>
+      </div>
+      <p class="left-name">你好,{{username}}</p>
+      <el-menu default-active="1" class="el-menu-vertical-demo" theme="dark">
+          <el-menu-item index="1" @click="getBlogs(true)"><i class="el-icon-menu"></i>热门博客</el-menu-item>
+        <el-submenu index="2">
+          <template slot="title"><i class="el-icon-message"></i>博客管理</template>
+          <el-menu-item index="2-1" @click="dialogAddVisible = true">添加博客</el-menu-item>
+          <el-menu-item index="2-2" @click="getBlogs(false)">我的博客</el-menu-item>
+          <el-menu-item index="2-3"><a style="text-decoration:none;color:#d1dbe5" href="/types">博客分类</a></el-menu-item>
+        </el-submenu>
+        <el-submenu index="3">
+          <template slot="title"><i class="el-icon-setting"></i>设置</template>
+          <el-menu-item index="3-1" @click="dialogUserVisible = true">修改个人信息</el-menu-item>
+          <el-menu-item index="3-2" @click="signout">退出</el-menu-item>
+        </el-submenu>
+      </el-menu>
+    </section><section class="right-component">
+      <el-card v-for="(blog, index) in blogs"  :body-style="{ padding: '5px' }" class="right-blog" :key="index">
+        <div class="blog-user blog-content">
+          <img :src="blog.image" class="image" /> 
+          <span v-text="blog.name"></span>
+        </div>
+        <div class="blog-content">
+          <h2 v-text="blog.title"></h2>
+          <small v-text="blog.content"></small>
+          <div class="bottom clearfix">
+            <el-button v-if="selfBlogs" type="text" class="button"><a :href="filterHref(blog.id)">查看全部</a></el-button>
+            <el-button v-if="!selfBlogs" type="text" @click="updateBlog(blog)" class="button" icon="edit">修改</el-button>
+            <el-button v-if="!selfBlogs" @click="deleteBlog(blog.id)" type="danger" icon="delete">删除</el-button>
+          </div>
+        </div>
+      </el-card>
+    </section>
+    <el-dialog title="博客详情" :visible.sync="dialogAddVisible" size="large">
+      <el-form :rules="addRules" :model="addForm" ref="addFrom">
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="addForm.title" auto-complete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="博客分类" prop="type">
+          <el-radio-group v-model="addForm.type" size="large" fill="#324057" text-color="#a4aebd">
+            <el-radio-button v-for="type in types" :key="type" :label="type"><span  v-text="type"></span></el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="内容" prop="content">
+          <el-input v-model="addForm.content" rows="5" type="textarea" auto-complete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="cancleSetBlog">取 消</el-button>
+        <el-button type="primary" @click="addBlogs">确定</el-button>
+      </div>
+    </el-dialog>
+    <el-dialog title="修改信息" :visible.sync="dialogUserVisible" size="large">
+        <el-form :rules="userRules" :model="userForm" ref="addFrom">
+          <el-form-item label="名字" prop="name">
+            <el-input v-model="userForm.name" auto-complete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="密码" prop="passwd">
+            <el-input v-model="userForm.passwd" rows="5" type="password" auto-complete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="确认密码" prop="passwdAgain">
+            <el-input rows="5" v-model="userForm.passwdAgain" type="password" auto-complete="off"></el-input>
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="dialogUserVisible = false">取 消</el-button>
+          <el-button type="primary" @click="updateUser">确定</el-button>
+        </div>
+      </el-dialog>
+  </div>
+  
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data () {
+        var checkPasswd = (rule, value, callback) => {
+          if (!value || value != this.userForm.passwd) {
+            return callback(new Error('两次输入密码不同'));
+          }
+          callback();
+        };
+        return {
+          userimage: '',
+          dialogAddVisible:false,
+          dialogUserVisible: false,
+          userForm: {
+            name: '',
+            passwd: ''
+          },
+          addForm:{
+            title: '',
+            type: '',
+            content: '',
+            id: null
+          },
+          addRules: {
+            title: [{
+              required: true, message: '请输入标题', trigger: 'blur'
+            }],
+            type: [{ required: false }],
+            content: [{
+              required: true, message: '请输入内容', trigger: 'blur'
+            }],
+          },
+          userRules: {
+            name: [{
+              required: true, message: '请输入新的名字', trigger: 'blur'
+            }],
+            passwd: [{
+              required: true, message: '请输入新密码', trigger: 'blur'
+            }],
+            passwdAgain: [{
+              validator: checkPasswd, trigger: 'blur'
+            }]
+          },
+          blogs: [],
+          types: [],
+          selfBlogs: false
+        }
+      },
+      mounted () {
+        this.getBlogs(true)
+      },
+      methods:{
+        signout () {
+          document.cookie = 'author = “” ; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+          window.location = '/signin'
+        },
+        updateImg () {
+          this.$refs.files.click()
+        },
+        getBlogs (self) {
+          this.selfBlogs = self
+          fetch('/api/getBlogs?self='+ self, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              "Accept": "application/json"
+            }
+          }).then(response => response.json()).then(res => {
+            if(res.code === 200) {
+              this.blogs = res.data.blogs
+              this.types = res.data.types.split(",")
+            } else {
+              this.$message.error(res.msg)
+            }
+          }).catch(err => this.$message.error(err))
+        },
+        cancleSetBlog () {
+          this.resetBlogFORM()
+          this.dialogAddVisible = false
+        },
+        resetBlogFORM () {
+          this.addForm = { title: '', content: '', id: null }
+        },
+        addBlogs () {
+          this.$refs['addFrom'].validate((valid) => {
+            if (valid) {
+              fetch('/api/setBlog', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  "Content-Type": "application/json;charset=UTF-8",
+                  "Accept": "application/json"
+                },
+                body: bodyPrase(this.addForm)
+              }).then(response => response.json()).then(res => {
+                if(res.code === 200) {
+                  this.$message.info(res.msg)
+                  this.dialogAddVisible = false
+                  this.getBlogs(this.selfBlogs)
+                  this.resetBlogFORM()
+                } else {
+                  this.$message.error(res.msg)
+                }
+              }).catch(err => this.$message.error(err))
+            } else {
+              this.$message.error('请填入完整信息！');
+              return false;
+            }
+          })
+        },
+        uploadImg (e) {
+          var data = new FormData(document.forms.hiddenForm)
+          if (e[0].size > 102400) {
+            this.$message.error('文件过大，请上传小于1M的头像')
+            return
+          }
+          fetch('/api/updateImg', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              "Accept": "application/json"
+            },
+            body: data
+          }).then(response => response.json()).then(res => {
+            if(res.code === 200) {
+              this.$message.info(res.msg)
+              this.userimage = res.url
+            } else {
+              this.$message.error(res.msg)
+            }
+          }).catch(err => this.$message.error(err))
+        },
+        updateBlog (blog) {
+          console.log(blog)
+          const { title, type, content, id } = blog
+          this.addFrom = Object.assign(this.addForm, { title, type, content, id })
+          this.dialogAddVisible = true
+        },
+        deleteBlog (id) {
+          this.$confirm('确认删除？').then(_ => {
+            fetch('/api/deleteBlog', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                "Accept": "application/json"
+              },
+              body: bodyPrase({id})
+            }).then(response => response.json()).then(res => {
+              if(res.code === 200) {
+                this.$message.info(res.msg)
+                this.getBlogs(this.selfBlogs)
+              } else {
+                this.$message.error(res.msg)
+              }
+            }).catch(err => this.$message.error(err))
+          })
+          .catch(_ => {});
+        },
+        updateUser () {
+          this.$refs['addFrom'].validate((valid) => {
+            if (valid) {
+              fetch('/api/updateUser', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  "Accept": "application/json"
+                },
+                body: bodyPrase(this.userForm)
+              }).then(response => response.json()).then(res => {
+                if(res.code === 200) {
+                  this.$message.info(res.msg)
+                } else {
+                  this.$message.error(res.msg)
+                }
+                this.dialogUserVisible = false;
+              }).catch(err => this.$message.error(err))
+            } else {
+              this.$message.error('请填入完整信息！');
+              return false;
+            }
+          })
+        },
+        filterHref (id) {
+          return '/blog/' + id
+        }
+      }
+    })
+  </script>
+</body>
+</html>
