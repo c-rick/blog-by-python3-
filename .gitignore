@@ -1,0 +1,4 @@
+node_modules/
+upload/*.png
+upload/*.jpeg
+upload/*.jpg
